@@ -44,9 +44,8 @@ void initialize_Q_table() {
 }
 
 // Choose an action based on the current state
-int choose_action(GameState state) {
+int choose_action(GameState state, int state_index) {
     // Convert the state to an index
-    int state_index = state_to_index(state);
 
     // Find the action with the highest Q-value for this state
     int best_action = std::distance(Q_table[state_index].begin(), std::max_element(Q_table[state_index].begin(), Q_table[state_index].end()));
@@ -68,12 +67,6 @@ void update_Q_table(GameState state, int action, float reward, GameState next_st
     float discount_factor = 0.9;
     Q_table[state_index][action] = Q_table[state_index][action] + learning_rate * (reward + discount_factor * max_next_Q - Q_table[state_index][action]);
 }
-// Convert a game state to an index for the Q-table
-int state_to_index(GameState state) {
-    // This function needs to be implemented based on your specific game state
-    // It should convert the game state to a unique index between 0 and NUM_STATES - 1
-}
-
 
 class Character {
 public:
@@ -91,8 +84,9 @@ public:
         // Initialization code here
     }
 
-    int do_ai_stuff() {
-        GameState current_state = get_current_state();
+    int do_ai_stuff(Character& player, Character& enemy) {
+        GameState current_state = get_current_state(player, enemy);
+        float epsilon = 0.2; // Set your exploration rate (epsilon) as needed
 
         int action;
         if (rand() / static_cast<float>(RAND_MAX) < epsilon) {
@@ -106,14 +100,14 @@ public:
         }
 
         // Execute the chosen action and get the resulting state and reward
-        GameState next_state = execute_action(action);  // Implement this function
-        float reward = calculate_reward(next_state);    // Implement this function
+        GameState next_state = execute_action(action, player, enemy); // Implement this function
+        float reward = calculate_reward(next_state); // Implement this function
 
         // Update the Q-table
         update_Q_table(current_state, action, reward, next_state);
 
         // Update the AI's internal state
-        update_internal_state(action);
+        update_internal_state(action, player);
 
         return action;
     }
@@ -189,7 +183,6 @@ int choose_action(GameState state) {
 
 // Update the Q-table based on the reward received
 void update_Q_table(GameState state, int action, float reward, GameState next_state) {
-    // Convert the states to indices
     int state_index = state_to_index(state);
     int next_state_index = state_to_index(next_state);
 
@@ -197,15 +190,36 @@ void update_Q_table(GameState state, int action, float reward, GameState next_st
     float max_next_Q = *std::max_element(Q_table[next_state_index].begin(), Q_table[next_state_index].end());
 
     // Update the Q-value for the current state and action
-    float learning_rate = 0.5;
-    float discount_factor = 0.9;
+    float learning_rate = 0.5; // Set your learning rate (alpha) as needed
+    float discount_factor = 0.9; // Set your discount factor (gamma) as needed
     Q_table[state_index][action] = Q_table[state_index][action] + learning_rate * (reward + discount_factor * max_next_Q - Q_table[state_index][action]);
 }
 
+
 // Convert a game state to an index for the Q-table
 int state_to_index(GameState state) {
-    // This function needs to be implemented based on your specific game state
-    // It should convert the game state to a unique index between 0 and num_states - 1
+    int index = 0;
+
+    // Linear mapping of state variables to an index
+    index += state.player_hp;
+    index *= PLAYER_SHIELD_STATES;
+    index += state.player_shieldUsed ? 1 : 0;
+    index *= PLAYER_REVOLVER_SHOTS_STATES;
+    index += state.player_Shots;
+    index *= PLAYER_SHIELDED_STATES;
+    index += state.player_shielded ? 1 : 0;
+    index *= AI_HP_STATES;
+    index += state.AI_hp;
+    index *= AI_SHOTS_STATES;
+    index += state.AI_shots;
+    index *= AI_SHIELD_STATES;
+    index += state.AI_shieldUsed ? 1 : 0;
+    index *= AI_SHIELDED_STATES;
+    index += state.AI_shielded ? 1 : 0;
+    index *= AI_ATTACK_DMG_STATES;
+    index += state.AI_attackDmg;
+
+    return index;
 }
 
 // Calculate the reward for a game state
@@ -220,7 +234,7 @@ void handleMove(int move, Character& player, Character& enemy) {
     bool sh = 0;
     if (player.isAI == 1) {
         //AI generates its moves
-        AIMove = enemy.do_ai_stuff();
+        AIMove = enemy.do_ai_stuff(player, enemy);
         if (move == 3) {
             sh = 1;
         }
