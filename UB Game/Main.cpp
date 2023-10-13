@@ -65,10 +65,11 @@ void initialize_Q_table() {
     else {
         for (int i = 0; i < NUM_STATES; ++i) {
             for (int j = 0; j < NUM_ACTIONS; ++j) {
-                Q_table[i][j] = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                Q_table.at(i).at(j) = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
             }
         }
     }
+
 }
 
 
@@ -96,13 +97,11 @@ struct GameState {
 int state_to_index(GameState state) {
     int index = 0;
 
-    index *= PLAYER_HP_STATES;
+    // Linear mapping of state variables to an index
     index += state.player_hp;
     index *= PLAYER_SHIELDED_STATES;
     index += state.player_shielded ? 1 : 0;
-    index *= PLAYER_HEALING_STATUS;
-    index *= state.player_healing;
-    index *= state.player_Cover;
+    index += state.player_healing;
 
     index *= AI_HP_STATES;
     index += state.ai_hp;
@@ -112,18 +111,21 @@ int state_to_index(GameState state) {
     index += state.ai_shieldUsed ? 1 : 0;
     index *= AI_SHIELDED_STATES;
     index += state.ai_shielded ? 1 : 0;
-    index *= AI_HEALING_STATUS;
-    index *= state.ai_healing;
-    index *= AI_POISON_STATUS;
-    index *= state.ai_poison;
-    index *= AI_COVER_STATUS;
-    index *= state.ai_Cover;
-    index *= AI_COVERED_STATUS;
-    index *= state.ai_Covered;
 
+    index *= AI_HEALING_STATUS;
+    index += state.ai_healing;
+    index *= AI_POISON_STATUS;    
+    index += state.ai_poison;
+    index *= AI_COVER_STATUS;    
+    index += state.ai_Cover;
+    index *= AI_COVERED_STATUS;
+    index += state.ai_Covered;
 
     return index;
 }
+
+
+
 
 // Choose an action based on the current state
 int choose_action(GameState state) {
@@ -140,7 +142,6 @@ int choose_action(GameState state) {
 
     return best_action;
 }
-
 
 
 
@@ -299,60 +300,60 @@ int handleAIMove(int move, Character& player, Character& enemy, int enMove) {
         }
 
         ////AI MOVES
-        if (move == ATTACK) {
+        if (move == ATTACK - 1) {
             if ((enemy.Covered < 1) && (enemy.CoverT > 0)) {
-                cout << "You cant use your Saber while in Cover." << endl;
+                cout << "AI tried to use the Saber while in Cover." << endl;
                 return 100;
             }
-            cout << "You sliced the Cyborg with your sword. You deal " << 1 * (enemy.attackDmg * (sh ? 0 : 1) *
+            cout << "The Cyborg sliced you with its sword. It deals you " << 1 * (enemy.attackDmg * (sh ? 0 : 1) *
                 (player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)) << " damage." << endl;
             player.hp -= 1 * (enemy.attackDmg * (sh ? 0 : 1) * (player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1));
             enemy.attackDmg = dmg;
             enemy.shielded = false;
         }
-        else if (move == FAN) {
+        else if (move == FAN - 1) {
             int i = 4;
             if (enemy.shots < i) {
-                cout << "You don't have enough shots to Fan the Gun." << endl;
+                cout << "The Cyborg tried to Fan the Gun while not having enough shots." << endl;
                 return 100;
             }
 
-            cout << "You Fan the Gun!" << endl;
+            cout << "The Cyborg Fans their Gun!" << endl;
             while (i > 0) {
                 enemy.hp -= 1.5 * enemy.attackDmg *(player.attackDmg * (sh ? 0 : 1)*(player.ActiveCover ? 0.5 : 1)
                     * (cv ? 0.5 : 1));
                 player.shots -= 1;
                 i--;
-                cout << "A Shot hits the Cyborg for " << 1.5 * (enemy.attackDmg * (sh ? 0 : 1) *(player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1))
+                cout << "A Shot hits you for " << 1.5 * (enemy.attackDmg * (sh ? 0 : 1) *(player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1))
                     << " damage!" << endl;
             }
             player.attackDmg = dmg;
             player.shielded = false;
         }
-        else if (move == RELOAD) {
-            cout << "You Reload your Revolver." << endl;
-            enemy.shots = 6;
-            enemy.attackDmg = dmg;
-            enemy.shielded = false;
-        }
         else if (move == REVOLVER) {
             if (enemy.shots < 1) {
-                cout << "You don't have enough shots to use the Revolver." << endl;
+                cout << "The Cyborg tries to use the Revolver without having enough shots." << endl;
                 return 100;
             }
-            cout << "You execute a devastating Shot! You deal " << 1.5 * enemy.attackDmg * (player.shielded ? 0 : 1) 
-                *(player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1) << "damage to the Cyborg." << endl;
+            cout << "The Cyborg shoots you with its Revolver! It deals you " << 1.5 * enemy.attackDmg * (player.shielded ? 0 : 1)
+                * (player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1) << " damage." << endl;
             enemy.hp -= 1.5 * enemy.attackDmg * (player.shielded ? 0 : 1) * (player.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1);
             enemy.shots -= 1;
             enemy.attackDmg = dmg;
             enemy.shielded = false;
         }
-        else if (move == HEAL) {
+        else if (move == RELOAD - 1) {
+            cout << "The Cyborg Reloads their Revolver." << endl;
+            enemy.shots = 6;
+            enemy.attackDmg = dmg;
+            enemy.shielded = false;
+        }
+        else if (move == HEAL - 1) {
             if (enemy.healing < 1) {
-                cout << "You don't have any Healing Packs left." << endl;
+                cout << "The Cybrog tried to heal without having any Healing Packs left." << endl;
                 return 100;
             }
-            cout << "You Heal your wounds! You heal " << 2 * enemy.attackDmg << " wounds." << endl;
+            cout << "The Cyborg Heal its wounds! It heals " << 2 * enemy.attackDmg << " wounds." << endl;
             enemy.hp += 2 * enemy.attackDmg;
             if (enemy.hp > 100) {
                 enemy.hp = 100;
@@ -360,33 +361,33 @@ int handleAIMove(int move, Character& player, Character& enemy, int enMove) {
             enemy.attackDmg = dmg;
             enemy.shielded = false;
         }
-        else if (move == POISON) {
+        else if (move == POISON - 1) {
             if (enemy.poison < 1) {
-                cout << "You don't have any more Poisons." << endl;
+                cout << "The Cyborg tries to poison you without having any more Poisons." << endl;
                 return 100;
             }
-            cout << "You manage to Poison your Enemy! He will be poisoned for 3 Turns. This damage bypasses Cover and Frenzy." << endl;
+            cout << "The Cyborg Poisons you! You will be poisoned for 3 Turns. This damage bypasses Cover and Reflexes." << endl;
             player.poisoned = 3 * (player.shielded ? 0 : 1);
             enemy.poison -= 1;
             enemy.attackDmg = dmg;
             enemy.shielded = false;
         }
-        else if (move == SHIELD) {
+        else if (move == SHIELD - 1) {
             if (enemy.shieldUsed) {
-                cout << "You have already used your Lightning Reflexes." << endl;
+                cout << "The Cyborg tried to use its Lightning Reflexes again but failed." << endl;
                 return 100;
             }
-            cout << "You use the burst of speed to evade any attack and set up for a devestating counter attack or heal!" << endl;
+            cout << "The Cyborg is incredibly quick, it evade any attacks and set up for a devestating counter attack or heal!" << endl;
             enemy.shieldUsed = true;
             enemy.shielded = true;
             enemy.attackDmg = 2* dmg;
         }
-        else if (move == COVER) {
+        else if (move == COVER - 1) {
             if (enemy.Covered < 1) {
-                cout << "You have already used your Cover." << endl;
+                cout << " The Cyborg tries to find Cover but fails." << endl;
                 return 100;
             }
-            cout << "You expertly jump into Cover! You will take half damage for 3 turns, but you wont be able to use your Saber or Frenzy." << endl;
+            cout << "The Cyborg jump into Cover! It will take half damage for 3 turns, but it wont be able to use its Saber." << endl;
             enemy.Covered -= 1;
             enemy.ActiveCover = 1;
             enemy.attackDmg = dmg;
@@ -559,90 +560,87 @@ void reset_player(Character& player) {
 
 int main() {
     srand(static_cast<unsigned>(time(0)));
-    Character player( 100, 6, false, false, 4, 3, 1, 0, 1, 3, false, false);
-    Character enemy( 100, 6, false, false, 4, 3, 1, 0, 1, 3, false, true);
+    Character player(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, false);
+    Character enemy(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, true);
     int move;
+    bool exit;
+
 
     initialize_Q_table();
 
     while (true) {
-        while (true) {
-            cout
-                << "Player HP: " << player.hp << endl
-                << "Player Shots: " << player.shots << endl
-                << "Player Shielded: " << player.shielded << endl
-                << "Player Shield Used: " << player.shieldUsed << endl
-                << "Enemy A.I. HP: " << enemy.hp << endl
-                << "Enemy A.I. Shots: " << enemy.shots << endl
-                << "Enemy A.I. Shielded: " << enemy.shielded << endl
-                << "Enemy A.I. Shield Used: " << enemy.shieldUsed << endl
-                << "(1) Saber" << endl
-                << "(2) Revolver (" << player.shots << " Shots left)" << endl
-                << "(3) Reload Revolver" << endl
-                << "(4) Fan the Gun!" << endl
-                << "(5) Healing Pack (" << player.healing << "Packs left)" << endl
-                << "(6) Poison Dart (" << player.poison << "Darts left)" << endl
-                << "(7) Lightning Reflexes (" << (int)(player.shieldUsed ? 0 : 1) << " Use left)" << endl
-                << "(8) Take Cover! (" << player.Covered << "Cover left)" << endl;
 
-            cin >> move;
-            if (move < ATTACK || move > COVER) {
-                cout << "Invalid move. Please try again." << endl;
-                continue;
-            }
-            bool exit;
-            if (player.poisoned != 0) {
-                player.hp -= 4;
-                player.poisoned -= 1;
-                cout << "You take 4 damage. You are poisoned for " << player.poisoned << " more turn(s)." << endl;
-            }
-            if (enemy.poisoned != 0) {
-                enemy.hp -= 4;
-                enemy.poisoned -= 1;
-                cout << "The Enemy Cyborg takes 4 damage. They are poisoned for " << enemy.poisoned << " more turn(s)." << endl;
-            }
-            if ((player.Covered == 0) && (player.CoverT > 0)) {
-                player.CoverT -= 1;
-            }
-            else if ((player.Covered == 0) && (player.CoverT == 0)) {
-                player.ActiveCover = 0;
-            }
-            if ((enemy.Covered != 1) && (enemy.CoverT > 0)) {
-                enemy.CoverT -= 1;
-            }
-            else if ((enemy.Covered == 0) && (enemy.CoverT == 0)) {
-                enemy.ActiveCover = 0;
-            }
+        cout
+            << "Player HP: " << player.hp << endl
+            << "Player Shots: " << player.shots << endl
+            << "Player Shielded: " << player.shielded << endl
+            << "Player Shield Used: " << player.shieldUsed << endl
+            << "Enemy A.I. HP: " << enemy.hp << endl
+            << "Enemy A.I. Shots: " << enemy.shots << endl
+            << "Enemy A.I. Shielded: " << enemy.shielded << endl
+            << "Enemy A.I. Shield Used: " << enemy.shieldUsed << endl
+            << "(1) Saber" << endl
+            << "(2) Revolver (" << player.shots << " Shots left)" << endl
+            << "(3) Reload Revolver" << endl
+            << "(4) Fan the Gun!" << endl
+            << "(5) Healing Pack (" << player.healing << "Packs left)" << endl
+            << "(6) Poison Dart (" << player.poison << "Darts left)" << endl
+            << "(7) Lightning Reflexes (" << (int)(player.shieldUsed ? 0 : 1) << " Use left)" << endl
+            << "(8) Take Cover! (" << player.Covered << "Cover left)" << endl;
 
-            if (enemy.hp <= 0 && player.hp > 0) {
-                exit = win(player, enemy);
-            }
-            else if (player.hp <= 0 && enemy.hp > 0) {
-                exit = lose(player, enemy);
-            }
-            else if (player.hp == 0 && enemy.hp == 0) {
-                exit = lose(player, enemy);
-            }
-
-            handleMove(move, player, enemy);
-            enemy.do_ai_stuff(player, enemy, move);
-
-            if (enemy.hp <= 0 && player.hp > 0) {
-                exit = win(player, enemy);
-            }
-            else if (player.hp <= 0 && enemy.hp > 0) {
-                exit = lose(player, enemy);
-            }
-            else if (player.hp == 0 && enemy.hp == 0) {
-                exit = lose(player, enemy);
-            }
+        cin >> move;
+        if (move < ATTACK || move > COVER) {
+            cout << "Invalid move. Please try again." << endl;
+            continue;
         }
-        if (player.hp <= 0 || enemy.hp <= 0) {
-            break;
-            
+        if (player.poisoned != 0) {
+            player.hp -= 4;
+            player.poisoned -= 1;
+            cout << "You take 4 damage. You are poisoned for " << player.poisoned << " more turn(s)." << endl;
         }
-        return 0;
+        if (enemy.poisoned != 0) {
+            enemy.hp -= 4;
+            enemy.poisoned -= 1;
+            cout << "The Enemy Cyborg takes 4 damage. They are poisoned for " << enemy.poisoned << " more turn(s)." << endl;
+        }
+        if ((player.Covered == 0) && (player.CoverT > 0)) {
+            player.CoverT -= 1;
+        }
+        else if ((player.Covered == 0) && (player.CoverT == 0)) {
+            player.ActiveCover = 0;
+        }
+        if ((enemy.Covered != 1) && (enemy.CoverT > 0)) {
+            enemy.CoverT -= 1;
+        }
+        else if ((enemy.Covered == 0) && (enemy.CoverT == 0)) {
+            enemy.ActiveCover = 0;
+        }
+
+        if (enemy.hp <= 0 && player.hp > 0) {
+            exit = win(player, enemy);
+        }
+        else if (player.hp <= 0 && enemy.hp > 0) {
+            exit = lose(player, enemy);
+        }
+        else if (player.hp == 0 && enemy.hp == 0) {
+            exit = lose(player, enemy);
+        }
+
+        handleMove(move, player, enemy);
+        enemy.do_ai_stuff(player, enemy, move);
+
+        if (enemy.hp <= 0 && player.hp > 0) {
+            exit = win(player, enemy);
+        }
+        else if (player.hp <= 0 && enemy.hp > 0) {
+            exit = lose(player, enemy);
+        }
+        else if (player.hp == 0 && enemy.hp == 0) {
+            exit = lose(player, enemy);
+        }
     }
+
+    return 0;
 }
 
 
