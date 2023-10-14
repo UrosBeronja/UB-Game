@@ -190,13 +190,13 @@ public:
             }
             for (int i = 0; i < 8; i++) {
                 if (AIMove == no[i]) {
-                    minus += 20;
+                    minus += 3*WASTE_PENALTY;
                 }
             }
             cout << "The AI generated the Move: " << 1+AIMove << endl;
             GameState next_state = execute_action(AIMove, move, player, enemy);
             if (next_state.ai_hp==-100) {
-                minus += 5;
+                minus += WASTE_PENALTY;
                 e = 1;
                 for (int i = 0; i < 8; i++) {
                     if (AIMove == no[i]) {
@@ -220,11 +220,21 @@ public:
 
 GameState get_current_state(Character player, Character enemy) {
     GameState current_state;
-    current_state.player_hp = (player.hp/10);
+    if ((player.hp / 10) < 0) {
+        current_state.player_hp = 0;
+    }
+    else {
+        current_state.player_hp = (player.hp / 10);
+    }
+    if ((enemy.hp / 10) < 0) {
+        current_state.ai_hp = 0;
+    }
+    else {
+        current_state.ai_hp = (enemy.hp / 10);
+    }
     current_state.player_shielded = player.shielded;
     current_state.player_healing = player.healing;
     current_state.player_Cover = player.ActiveCover;
-    current_state.ai_hp = (enemy.hp/10);
     current_state.ai_shots = enemy.shots;
     current_state.ai_shieldUsed = enemy.shieldUsed;
     current_state.ai_shielded = enemy.shielded;
@@ -258,18 +268,20 @@ GameState execute_action(int action, int move, Character& player, Character& ene
 
 float calculate_reward(GameState state, int minus) {
     float reward = 0 - minus;
-    reward += state.damage_dealt_to_player;
+    reward += 2*state.damage_dealt_to_player;
 
-    if (state.player_hp <= 0) {
-        reward -= WASTE_PENALTY;
-    }
-    else if (state.ai_hp <= 0) {
+    if ((state.player_hp <= 0) && (state.ai_hp > 0)) {
         reward += WIN_REWARD;
+    }
+    else if ((state.player_hp > 0) && (state.ai_hp <= 0)) {
+        reward -= WIN_REWARD;
     }
 
     reward += SURVIVAL_REWARD;
 
     reward += (state.ai_hp);
+
+    cout << "(AI reward: " << reward << ")" << endl;
 
     return reward;
 }
@@ -333,7 +345,7 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         else if (move+1 == RELOAD) {
             cout << "[The Cyborg Reloads their Revolver.]" << endl;
            if(chara2.shots > 3) {
-                reward -= 5;
+                reward -= WASTE_PENALTY;
             }
             chara2.shots = 6;
             chara2.attackDmg = 4;
@@ -726,7 +738,7 @@ int main() {
         }
 
         if (player.isAI == 1) {
-            cin >> move;
+            move = getValidMove();
             move = player.AI_Cal(enemy, player, move, turn);
         }
         else {
