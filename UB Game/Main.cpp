@@ -192,7 +192,7 @@ public:
                     minus += 20;
                 }
             }
-            cout << "The AI generated the Move: " << AIMove << " (minus 1)." << endl;
+            cout << "The AI generated the Move: " << 1+AIMove << endl;
             GameState next_state = execute_action(AIMove, move, player, enemy);
             if (next_state.ai_hp==-100) {
                 minus += 5;
@@ -498,7 +498,7 @@ bool win(Character& player, Character& enemy, int score) {
     string response;
     while (true) {
         cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
-            << "You win this battle, but more acre coming. Would you like to play on? (yes/no)" << endl
+            << "You win this battle, but more are coming. Would you like to play on? (yes/no)" << endl
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
         cin >> response;
         for (char& c : response) {
@@ -515,11 +515,11 @@ bool win(Character& player, Character& enemy, int score) {
             return true;
         }
         else if (response == "no") {
-            return false;
             cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
                 << "That's alright Cowboy, the Frontier will wait. See you next time." << endl
                 << "Your Final Score is: " << score << endl
                 << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
+            return false;
         }
         else {
             cout << "Invalid response. Please enter 'yes' or 'no'." << endl;
@@ -538,11 +538,20 @@ bool lose(Character& player, Character& enemy, int score) {
             c = tolower(c);
         }
         if (response == "yes") {
+            score = 0;
+            cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+                << "That is the spirit Cowboy! Be prepared, your first duel will begin soon." << endl
+                << "Your Current Score is: " << score << endl
+                << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
             reset_player(player);
             reset_player(enemy);
             return true;
         }
         else if (response == "no") {
+            cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+                << "That's alright Cowboy, the Frontier will wait. See you next time." << endl
+                << "Your Final Score was: " << score << endl
+                << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
             return false;
         }
         else {
