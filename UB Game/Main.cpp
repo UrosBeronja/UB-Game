@@ -508,7 +508,6 @@ bool win(Character& player, Character& enemy, int score, int turn) {
                 << "You have defeated the enemy, but the Cyborgs have adapted, a new, better Cyborg takes his place he next noon, ready to fight." << endl
                 << "Your Current Score is: "<< score << endl
                 << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
-            turn = 1;
             return true;
         }
         else if (response == "no") {
@@ -542,7 +541,6 @@ bool lose(Character& player, Character& enemy, int score, int turn) {
                 << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
             reset_player(player);
             reset_player(enemy);
-            turn = 1;
             return true;
         }
         else if (response == "no") {
@@ -734,13 +732,23 @@ int main() {
 
         if (enemy.hp <= 0 && player.hp > 0) {
             exit = win(player, enemy, score, turn);
+            if (exit) {
+                turn = 0;
+            }
         }
         else if (player.hp <= 0 && enemy.hp > 0) {
             exit = lose(player, enemy, score, turn);
+            if (exit) {
+                turn = 0;
+            }
         }
         else if (player.hp == 0 && enemy.hp == 0) {
             exit = lose(player, enemy, score, turn);
+            if (exit) {
+                turn = 0;
+            }
         }
+        turn++;
     }
 
     return 0;
