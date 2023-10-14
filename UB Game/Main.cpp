@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <string>
 #include <vector>
 #include <cstdlib>
@@ -18,11 +18,9 @@ const int HEAL = 5;
 const int POISON = 6;
 const int SHIELD = 7;
 const int COVER = 8;
-
 const int WIN_REWARD = 20;
 const int SURVIVAL_REWARD = 2;
 const int WASTE_PENALTY = 6;
-
 
 struct GameState;
 class Character;
@@ -35,13 +33,11 @@ bool win(Character& player, Character& enemy);
 bool lose(Character& player, Character& enemy);
 void reset_player(Character& player);
 
-
 // Define the state and action spaces
 const int PLAYER_HP_STATES = 11;
 const int PLAYER_SHIELDED_STATES = 2;
 const int PLAYER_HEALING_STATUS = 4;
 const int PLAYER_COVER_STATUS = 2;
-
 const int AI_HP_STATES = 11;
 const int AI_SHOTS_STATES = 7;
 const int AI_SHIELD_STATES = 2;
@@ -55,7 +51,6 @@ const float NUM_STATES = PLAYER_HP_STATES *PLAYER_SHIELDED_STATES *PLAYER_HEALIN
 *PLAYER_COVER_STATUS *AI_HP_STATES *AI_SHOTS_STATES *AI_SHIELD_STATES *AI_SHIELDED_STATES *AI_HEALING_STATUS *AI_POISON_STATUS
 *AI_COVER_STATUS;// 1.6436706e+15, 1,6 quadrilion, 14 quadrilion options
 const int NUM_ACTIONS = 8;
-
 
 // Initialize the Q-table with zeros
 vector<vector<float>> Q_table;
@@ -75,13 +70,11 @@ void initialize_Q_table() {
 
 }
 
-
 struct GameState {
     int player_hp;
     bool player_shielded;
     int player_healing;
     int player_Cover;
-    
     int ai_hp;
     int ai_shots;
     bool ai_shieldUsed;
@@ -90,22 +83,17 @@ struct GameState {
     int ai_poison;
     int ai_Cover;
     int ai_Covered;
- 
     int damage_dealt_to_player;
 };
-
-
 
 // Convert a game state to an index for the Q-table
 int state_to_index(GameState state) {
     int index = 0;
-
     // Linear mapping of state variables to an index
     index += state.player_hp;
     index *= PLAYER_SHIELDED_STATES;
     index += state.player_shielded ? 1 : 0;
     index += state.player_healing;
-
     index *= AI_HP_STATES;
     index += state.ai_hp;
     index *= AI_SHOTS_STATES;
@@ -114,7 +102,6 @@ int state_to_index(GameState state) {
     index += state.ai_shieldUsed ? 1 : 0;
     index *= AI_SHIELDED_STATES;
     index += state.ai_shielded ? 1 : 0;
-
     index *= AI_HEALING_STATUS;
     index += state.ai_healing;
     index *= AI_POISON_STATUS;    
@@ -126,9 +113,6 @@ int state_to_index(GameState state) {
 
     return index;
 }
-
-
-
 
 // Choose an action based on the current state
 int choose_action(GameState state) {
@@ -142,11 +126,8 @@ int choose_action(GameState state) {
             best_action = action;
         }
     }
-
     return best_action;
 }
-
-
 
 // Update the Q-table based on the reward received
 void update_Q_table(GameState state, int action, float reward, GameState next_state) {
@@ -159,15 +140,11 @@ void update_Q_table(GameState state, int action, float reward, GameState next_st
             max_next_Q = Q_table[next_state_index][next_action];
         }
     }
-
     float learning_rate = 0.5;
     float discount_factor = 0.9;
-
     Q_table[state_index][action] = Q_table[state_index][action] + learning_rate * (reward + discount_factor * max_next_Q 
         - Q_table[state_index][action]);
 }
-
-
 
 class Character {
 public:
@@ -193,10 +170,12 @@ public:
     int do_ai_stuff(Character& player, Character& enemy, int move) {
         int AIMove;
         int minus = 0;
-        int no[8];
+        int no[8]{};
         int j = 0;
         bool e=1;
-        for (int i=0; i < 9; i++) {
+        bool r = 1;
+       
+        for (int i = 0; i < 8; i++) {
             no[i] = 10;
         }
         GameState current_state = get_current_state(player, enemy);
@@ -208,7 +187,7 @@ public:
             else {
                 AIMove = choose_action(current_state); // Exploit (choose the action with the highest Q-value)
             }
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < 8; i++) {
                 if (AIMove == no[i]) {
                     minus += 20;
                 }
@@ -218,8 +197,15 @@ public:
             if (next_state.ai_hp==-100) {
                 minus += 5;
                 e = 1;
-                no[j] = AIMove;
-                j++;
+                for (int i = 0; i < 8; i++) {
+                    if (AIMove == no[i]) {
+                        r = 0;
+                    }
+                }
+                if (r) {
+                    no[j] = AIMove;
+                    j++;
+                }
             }
             else {
                 float reward = calculate_reward(next_state, minus);
@@ -227,8 +213,6 @@ public:
                 e = 0;
             }
         }
-        
-
         return AIMove;
     }
 };
@@ -239,8 +223,6 @@ GameState get_current_state(Character player, Character enemy) {
     current_state.player_shielded = player.shielded;
     current_state.player_healing = player.healing;
     current_state.player_Cover = player.ActiveCover;
-    
-
     current_state.ai_hp = (enemy.hp/10);
     current_state.ai_shots = enemy.shots;
     current_state.ai_shieldUsed = enemy.shieldUsed;
@@ -254,7 +236,6 @@ GameState get_current_state(Character player, Character enemy) {
 
     return current_state;
 }
-
 
 // Function to execute an action and update the game state
 GameState execute_action(int action, int move, Character& player, Character& enemy) {
@@ -279,7 +260,6 @@ GameState execute_action(int action, int move, Character& player, Character& ene
     return next_state;
 }
 
-
 float calculate_reward(GameState state, int minus) {
     float reward = 0 - minus;
     reward += state.damage_dealt_to_player;
@@ -298,7 +278,6 @@ float calculate_reward(GameState state, int minus) {
     return reward;
 }
 
-
 int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
     bool sh = 0;
     bool cv = 0;
@@ -316,11 +295,11 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         ////AI MOVES
         if (move+1 == ATTACK) {
             if ((chara2.Covered < 1) && (chara2.CoverT > 0)) {
-                cout << "AI tried to use the Saber while in Cover." << endl;
+                cout << "[AI tried to use the Saber while in Cover.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg sliced you with its sword. It deals you " << 1 * (chara2.attackDmg * (sh ? 0 : 1) *
-                (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)) << " damage." << endl;
+            cout << "[The Cyborg sliced you with its sword. It deals you " << 1 * (chara2.attackDmg * (sh ? 0 : 1) *
+                (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)) << " damage.]" << endl;
             chara1.hp -= 1 * chara2.attackDmg * (sh ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1);
             chara2.attackDmg = 4;
             chara2.shielded = false;
@@ -328,35 +307,35 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         else if (move+1 == FAN) {
             int i = 4;
             if (chara2.shots < i) {
-                cout << "The Cyborg tried to Fan the Gun while not having enough shots." << endl;
+                cout << "[The Cyborg tried to Fan the Gun while not having enough shots.]" << endl;
                 return 100;
             }
 
-            cout << "The Cyborg Fans their Gun!" << endl;
+            cout << "[The Cyborg Fans their Gun!]" << endl;
             while (i > 0) {
                 chara1.hp -= 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) *(cv ? 0.5 : 1);
                 chara2.shots -= 1;
                 i--;
-                cout << "A Shot hits you for " << 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)
-                    << " damage!" << endl;
+                cout << "[A Shot hits you for " << 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)
+                    << " damage!]" << endl;
             }
             chara2.attackDmg = 4;
             chara2.shielded = false;
         }
         else if (move+1 == REVOLVER) {
             if (chara2.shots < 1) {
-                cout << "The Cyborg tries to use the Revolver without having enough shots." << endl;
+                cout << "[The Cyborg tries to use the Revolver without having enough shots.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg shoots you with its Revolver! It deals you " << 1.5 * chara2.attackDmg * (sh ? 0 : 1)
-                * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1) << " damage." << endl;
+            cout << "[The Cyborg shoots you with its Revolver! It deals you " << 1.5 * chara2.attackDmg * (sh ? 0 : 1)
+                * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1) << " damage.]" << endl;
             chara1.hp -= 1.5 * chara2.attackDmg * (chara1.shielded ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1);
             chara2.shots -= 1;
             chara2.attackDmg = 4;
             chara2.shielded = false;
         }
         else if (move+1 == RELOAD) {
-            cout << "The Cyborg Reloads their Revolver." << endl;
+            cout << "[The Cyborg Reloads their Revolver.]" << endl;
            if(chara2.shots > 3) {
                 reward -= 5;
             }
@@ -366,10 +345,10 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         }
         else if (move+1 == HEAL) {
             if (chara2.healing < 1) {
-                cout << "The Cybrog tried to heal without having any Healing Packs left." << endl;
+                cout << "[The Cybrog tried to heal without having any Healing Packs left.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg Heal its wounds! It heals " << 2 * chara2.attackDmg << " wounds." << endl;
+            cout << "[The Cyborg Heal its wounds! It heals " << 2 * chara2.attackDmg << " wounds.]" << endl;
             chara2.hp += 2 * chara2.attackDmg;
             if (chara2.hp > 100) {
                 reward = reward + 100 - chara2.hp;
@@ -380,10 +359,10 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         }
         else if (move+1 == POISON) {
             if (chara2.poison < 1) {
-                cout << "The Cyborg tries to poison you without having any more Poisons." << endl;
+                cout << "[The Cyborg tries to poison you without having any more Poisons.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg Poisons you! You will be poisoned for 3 Turns. This damage bypasses Cover and Reflexes." << endl;
+            cout << "[The Cyborg Poisons you! You will be poisoned for 3 Turns. This damage bypasses Cover and Reflexes.]" << endl;
             chara1.poisoned = 3 * (chara1.shielded ? 0 : 1);
             chara2.poison -= 1;
             chara2.attackDmg = 4;
@@ -391,20 +370,20 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
         }
         else if (move+1 == SHIELD) {
             if (chara2.shieldUsed) {
-                cout << "The Cyborg tried to use its Lightning Reflexes again but failed." << endl;
+                cout << "[The Cyborg tried to use its Lightning Reflexes again but failed.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg is incredibly quick, it evade any attacks and set up for a devestating counter attack or heal!" << endl;
+            cout << "[The Cyborg is incredibly quick, it evade any attacks and set up for a devestating counter attack or heal!]" << endl;
             chara2.shieldUsed = true;
             chara2.shielded = true;
             chara2.attackDmg = 8;
         }
         else if (move+1 == COVER) {
             if (chara2.Covered < 1) {
-                cout << " The Cyborg tries to find Cover but fails." << endl;
+                cout << "[The Cyborg tries to find Cover but fails.]" << endl;
                 return 100;
             }
-            cout << "The Cyborg jump into Cover! It will take half damage for 3 turns, but it wont be able to use its Saber." << endl;
+            cout << "[The Cyborg jump into Cover! It will take half damage for 3 turns, but it wont be able to use its Saber.]" << endl;
             chara2.Covered -= 1;
             chara2.ActiveCover = 1;
             chara2.attackDmg = 4;
@@ -418,17 +397,15 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
     return reward;
 }
 
-
-
 void handleMove(int move, Character& char1, Character& char2) {
     ////PLAYER MOVES
     if (move == ATTACK) {
         if ((char1.Covered < 1) && (char1.CoverT > 0)) {
-            cout << "You cant use your Saber while in Cover. You are in cover for "<< char1.CoverT <<" more turns." << endl;
+            cout << "[You cant use your Saber while in Cover. You are in cover for "<< char1.CoverT <<" more turns.]" << endl;
             return;
         }
-        cout << "You sliced the Cyborg with your sword. You deal " << 1 * char1.attackDmg * (char2.shielded ? 0 : 1) *
-            (char2.ActiveCover ? 0.5 : 1) << " damage." << endl;
+        cout << "[You sliced the Cyborg with your sword. You deal " << 1 * char1.attackDmg * (char2.shielded ? 0 : 1) *
+            (char2.ActiveCover ? 0.5 : 1) << " damage.]" << endl;
         char2.hp -= 1 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1);
         char1.attackDmg = 4;
         char1.shielded = false;
@@ -436,34 +413,34 @@ void handleMove(int move, Character& char1, Character& char2) {
     else if (move == FAN) {
         int i = 4;
         if (char1.shots < i) {
-            cout << "You don't have enough shots to Fan the Gun." << endl;
+            cout << "[You don't have enough shots to Fan the Gun.]" << endl;
             return;
         }
 
-        cout << "You Fan the Gun!" << endl;
+        cout << "[You Fan the Gun!]" << endl;
         while (i > 0) {
             char2.hp -= 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1);
             char1.shots -= 1;
             i -= 1;
-            cout << "A Shot hits the Cyborg for " << 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1) << " damage!" << endl;
+            cout << "[A Shot hits the Cyborg for " << 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1) << " damage!]" << endl;
         }
         char1.attackDmg = 4;
         char1.shielded = false;
     }
     else if (move == RELOAD) {
-        cout << "You Reload your Revolver." << endl;
+        cout << "[You Reload your Revolver.]" << endl;
         char1.shots = 6;
         char1.attackDmg = 4;
         char1.shielded = false;
     }
     else if (move == REVOLVER) {
         if (char1.shots < 1) {
-            cout << "You don't have any shots in the Revolver." << endl;
+            cout << "[You don't have any shots in the Revolver.]" << endl;
             return;
         }
        
-        cout << "You execute a devastating Shot! You deal " << 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1)
-            << " damage to the Cyborg." << endl;
+        cout << "[Direect Hit! You deal " << 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1)
+            << " damage to the Cyborg.]" << endl;
         char2.hp -= 1.5 * char1.attackDmg * (char2.shielded ? 0 : 1) * (char2.ActiveCover ? 0.5 : 1);
         char1.shots -= 1;
         char1.attackDmg = 4;
@@ -471,10 +448,10 @@ void handleMove(int move, Character& char1, Character& char2) {
     }
     else if (move == HEAL) {
         if (char1.healing < 1) {
-            cout << "You don't have any Healing Packs left." << endl;
+            cout << "[You don't have any Healing Packs left.]" << endl;
             return;
         }
-        cout << "You Heal your wounds! You heal " << 2 * char1.attackDmg << " wounds, up to your mximum." << endl;
+        cout << "[You Heal your wounds! You heal " << 2 * char1.attackDmg << " wounds, up to your mximum.]" << endl;
         char1.hp += 2 * char1.attackDmg;
         if (char1.hp > 100) {
             char1.hp = 100;
@@ -485,10 +462,10 @@ void handleMove(int move, Character& char1, Character& char2) {
     }
     else if (move == POISON) {
         if (char1.poison < 1) {
-            cout << "You don't have any more Poisons." << endl;
+            cout << "[You don't have any more Poisons.]" << endl;
             return;
         }
-        cout << "You manage to Poison your Enemy! He will be poisoned for 3 Turns. This damage bypasses Cover." << endl;
+        cout << "[You manage to Poison your Enemy! He will be poisoned for 3 Turns. This damage bypasses Cover.]" << endl;
         char2.poisoned = 3 * (char2.shielded ? 0 : 1);
         char1.poison -= 1;
         char1.attackDmg = 4;
@@ -496,20 +473,20 @@ void handleMove(int move, Character& char1, Character& char2) {
     }
     else if (move == SHIELD) {
         if (char1.shieldUsed) {
-            cout << "You have already used your Lightning Reflexes." << endl;
+            cout << "[You have already used your Lightning Reflexes.]" << endl;
             return;
         }
-        cout << "You use the burst of speed to evade any attack and set up for a devestating counter attack or heal!" << endl;
+        cout << "[You use the burst of speed to evade any attack and set up for a devestating counter attack or heal!]" << endl;
         char1.shieldUsed = true;
         char1.shielded = true;
         char1.attackDmg = 8;
     }
     else if (move == COVER) {
         if (char1.Covered < 1) {
-            cout << "You have already used your Cover." << endl;
+            cout << "[You have already used your Cover.]" << endl;
             return;
         }
-        cout << "You expertly jump into Cover! You will take half damage for 3 turns, but you wont be able to use your Saber or Frenzy." << endl;
+        cout << "[You expertly jump into Cover! You will take half damage for 3 turns, but you wont be able to use your Saber.]" << endl;
         char1.Covered -= 1;
         char1.ActiveCover = 1;
         char1.attackDmg = 4;
@@ -517,21 +494,32 @@ void handleMove(int move, Character& char1, Character& char2) {
     }
 }
 
-bool win(Character& player, Character& enemy) {
+bool win(Character& player, Character& enemy, int score) {
     string response;
     while (true) {
-        cout << "You win. Would you like to play on? (yes/no)" << endl;
+        cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "You win this battle, but more acre coming. Would you like to play on? (yes/no)" << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
         cin >> response;
         for (char& c : response) {
             c = tolower(c);
         }
         if (response == "yes") {
+            score = score + player.hp + 8*player.healing;
             reset_player(player);
             reset_player(enemy);
+            cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+                << "You have defeated the enemy, but the Cyborgs have adapted, a new, better Cyborg takes his place he next noon, ready to fight." << endl
+                << "Your Current Score is: "<< score << endl
+                << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
             return true;
         }
         else if (response == "no") {
             return false;
+            cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+                << "That's alright Cowboy, the Frontier will wait. See you next time." << endl
+                << "Your Final Score is: " << score << endl
+                << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
         }
         else {
             cout << "Invalid response. Please enter 'yes' or 'no'." << endl;
@@ -539,10 +527,12 @@ bool win(Character& player, Character& enemy) {
     }
 }
 
-bool lose(Character& player, Character& enemy) {
+bool lose(Character& player, Character& enemy, int score) {
     string response;
     while (true) {
-        cout << "You lose. Would you like to play again? (yes/no)" << endl;
+        cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "You have lost the battle, but we have recovered you and rebuild you. Would you like to play on? (yes/no)" << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
         cin >> response;
         for (char& c : response) {
             c = tolower(c);
@@ -574,50 +564,134 @@ void reset_player(Character& chara) {
     chara.CoverT = 3;
 }
 
+int getValidMove() {
+    int input;
+    while (true) {
+        cout << "Enter a move (1-8): ";
+        if (cin >> input) {
+            if (input >= 1 && input <= 8) {
+                // Valid input
+                break;
+            }
+            else {
+                cout << "Invalid input. Please enter a number between 1 and 8." << endl;
+            }
+        }
+        else {
+            cout << "Invalid input. Please enter a valid number." << endl;
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        }
+    }
+    return input;
+}
+
 int main() {
     srand(static_cast<unsigned>(time(0)));
     Character player(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, false);
     Character enemy(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, true);
     int move;
-    bool exit=true;
+    bool exit=false;
+    string response1;
+    int score = 0;
 
     initialize_Q_table();
+    
+    cout << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+        << endl
+        /*<< "⠀⠀⠀⠀⠀⠀⠀⠀ ⠀⠀⠀⢀⣀⣠⣤⣀⠀⠀⠀⠀⠀⠀⠀ " << endl
+        << "⠀ ⠀⠀⠀⠀⣀⣀⣀⣠⠔⠊⠑⠒⣷⠆⢸⢳⠀⠀⠀⠀⠀⠀ " << endl
+        << " ⠀⠀⢀⠔⠋⠁⠀⠀⠉⠁⠒⠤⣄⠋⠀⠈⢧⡇⠀⠀⣰⣶⢆⠀" << endl
+        << " ⠀⠀⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢉⣐⠒⠼⠿⠔⣊⣿⣿⢸⠀" << endl
+        << " ⠀⠀⡇⠀⠀⠀⠀⢀⣤⡒⠋⣩⢉⠙⠛⢿⣿⡶⣾⣿⣿⣿⡌⠀" << endl
+        << "⠀⠀⠀⠹⡄⠀⠀⢀⣾⣾⠁⢘⣭⣷⣶⠃⣿⣾⣷⣿⣿⣟⠝⠀⠀" << endl
+        << " ⠀⠀⠀⠈⠢⣀⣸⢳⠛⡄⠀⠀⠀⠁⠀⣧⡀⢸⡽⠗⠁⠀⠀⠀" << endl
+        << "⠀⠀⠀⠀⠀⠀⠀⠈⠳⡄⠁⢠⠀⠀⠋⢱⢿⣷⡿⠁⠀⠀⠀⠀⠀" << endl
+        << "⠀ ⠀⠀⠀⠀⠀⠀⠀⡿⠀⢀⠐⠀⢭⣭⣽⣩⡇⠀⠀⠀⠀⠀⠀" << endl
+        << "⠀⠀⠀⠀⠀⠀⠀⢀⣴⡇⠑⢬⣀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀" << endl
+        << "⠀⠀⠀⠀⠀⠀⢀⠎⠹⡕⠠⢀⣈⠻⢿⣿⣿⣷⣄⠀⠀⠀⠀⠀⠀" << endl
+        << " ⠀⣀⠤⠒⠒⡇⠀⠀⠈⠢⣔⣭⣙⣛⣿⣽⣇⡏⣣⣀⠀⠀⠀⠀" << endl
+        << " ⠉⠀⠀⠀⠀⠘⡄⠀⠀⣠⠴⡟⠍⡻⠟⣿⠘⣷⣇⢧⡉⠉⠉⠁" << endl
+        << " ⠀⠀⠀⠀⠀⠀⣇⣠⠾⠃⠀⠓⠤⢔⣄⢣⠃⡇⣿⠚⠉⠀⠀⠀" << endl
+        << " ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⠉⢧⠁⡇⠀⠀⠀⠀⠀" << endl
+        << " ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠃⠀⠛⠀⠀⠀⠀⠀⠀" << endl*/
+        << "         _________       ____ ___      ________                              " << endl
+        << "         \\______   \\     |    |   \\  / _____ / _____    _____    ____       " << endl
+        << "         |    |  _/     |    |   /   /   \\  ___\\__   \\  /      \\_/ __  \\     " << endl
+        << "         |    |   \\     |    |  /    \\    \\_\\  \\ / __ \\ | Y Y   \\   ___/     " << endl
+        << "         |______  / /\\ | ______/ /\\   \\______   (____  /__|_|/   \\___> / \\   " << endl
+        << "               \\ / \\ /           \\ /         \\ /    \\ /        \\ /  \\ /\\/    " << endl
+        <<endl
+        <<endl
+        << "As the sun sets on the unforgiving Froniter, you'll face off against a series of increasingly powerful cyborg adversaries, armed " << endl
+        << "with quick-draw skills, nerves of steel, and your trusty six-shooter. Survive the challenges, explore treacherous landscapes, and " << endl
+        << "make choices that define your fate in this unforgiving frontier." << endl
+        << "It's a battle for survival, redemption, and legendary status, where only the fastest draw and sharpest mind will determine who " << endl
+        << "triumphs in the high noon duel. Will you outgun the relentless cyborg hunters or become a legend etched in the annals of this " << endl
+        << "new Frontier ? " << endl
+        << "The choice is yours, partner." << endl
+        << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+        << "Your First Duel Awaits. Face them at noon or chichen out? (yes = play game/no = exit game)" << endl
+        << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
+    cin >> response1;
+    for (char& c : response1) {
+        c = tolower(c);
+    }
+    if (response1 == "yes") {
+        cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "Come on then Cowboy, Lets Ride." << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
+        cout << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "The First Cyborg Approaches, challenging you to a duel at the peak of day." << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
+
+        exit = true;
+    }
+    else if (response1 == "no") {
+        cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "That's alright Cowboy, the Frontier will wait. See you next time." << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
+        exit= false;
+    }
 
     while (exit) {
 
         cout
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "Your Stats:" << endl
             << "Player HP: " << player.hp << endl
             << "Player Shots: " << player.shots << endl
             << "Player Reflex Buff (1 is active, 0 is inactive): " << (int)player.shielded << endl
             << "Player Reflex Left: " << (int)(!player.shieldUsed) << endl
-            << "Enemy A.I. HP: " << enemy.hp << endl
-            << "Enemy A.I. Shots: " << enemy.shots << endl
-            << "Enemy A.I. Reflex Buff (1 is active, 0 is inactive): " << (int)enemy.shielded << endl
-            << "Enemy A.I. Reflex Left: " << (int)(!enemy.shieldUsed) << endl
-            << "(1) Saber [A Basic attack, does 4 damage.]" << endl
-            << "(2) Revolver (" << player.shots << " Shots left) [A more powerful attack that uses up your Shots.]" << endl
-            << "(3) Reload Revolver [Regain up to 6 Shots.]" << endl
-            << "(4) Fan the Gun! [Fire off 4 consecutive shots! It uses up 4 of your shots and cant be done with less.]" << endl
-            << "(5) Healing Pack (" << player.healing << " Packs left) [Will heal you for double the amount of damage the Saber would do.]" << endl
-            << "(6) Poison Dart (" << player.poison << " Darts left) [Deal 4 damage for 3 turns to your enemy. Bypasses Cover.]" << endl
-            << "(7) Lightning Reflexes (" << (int)(player.shieldUsed ? 0 : 1) << " Use left) [A powerful Manouver. Ignore all incoming damage this turn and do double damage next turn.]" << endl
-            << "(8) Take Cover! (" << player.Covered << " Cover left) [Shield yourself behind cover, take half damage for 3 turns, but you cant use the Saber.]" << endl;
-
-        cin >> move;
-        move = (int)move;
-        if (move < ATTACK || move > COVER) {
-            cout << "Invalid move. Please try again." << endl;
-            continue;
-        }
+            << "Player Cover Timer (In Turns):" << player.CoverT << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "The Enemy Cyborgs Stats (Shown through your trusty scanner):" << endl
+            << "Enemy Cyborg HP: " << enemy.hp << endl
+            << "Enemy Cyborg Shots: " << enemy.shots << endl
+            << "Enemy Cyborg Reflex Buff (1 is active, 0 is inactive): " << (int)enemy.shielded << endl
+            << "Enemy Cyborg Reflex Left: " << (int)(!enemy.shieldUsed) << endl
+            << "Enemy Cyborg Cover Timer (In Turns):" << enemy.CoverT << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "(1) Saber                                                                                         [A Basic attack, does 4 damage.]" << endl
+            << "(2) Revolver (" << player.shots << " Shots left)                                                      [A more powerful attack that uses up your Shots.]" << endl
+            << "(3) Reload Revolver                                                                                        [Regain up to 6 Shots.]" << endl
+            << "(4) Fan the Gun!                            [Fire off 4 consecutive shots! It uses up 4 of your shots and cant be done with less.]" << endl
+            << "(5) Healing Pack (" << player.healing << " Packs left)                                [Will heal you for double the amount of damage the Saber would do.]" << endl
+            << "(6) Poison Dart (" << player.poison << " Darts left)                                          [Deal 4 damage for 3 turns to your enemy. Bypasses Cover.]" << endl
+            << "(7) Lightning Reflexes (" << (int)(player.shieldUsed ? 0 : 1) << " Use left)    [A powerful Manouver. Ignore all incoming damage this turn and do double damage next turn.]" << endl
+            << "(8) Take Cover! (" << player.Covered << " Cover left)           [Shield yourself behind cover, take half damage for 3 turns, but you cant use the Saber.]" << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            ;
+        int move = getValidMove();
         if (player.poisoned != 0) {
             player.hp -= 4;
             player.poisoned -= 1;
-            cout << "You take 4 damage. You are poisoned for " << player.poisoned << " more turn(s)." << endl;
+            cout << "[You take 4 damage. You are poisoned for " << player.poisoned << " more turn(s).]" << endl;
         }
         if (enemy.poisoned != 0) {
             enemy.hp -= 4;
             enemy.poisoned -= 1;
-            cout << "The Enemy Cyborg takes 4 damage. They are poisoned for " << enemy.poisoned << " more turn(s)." << endl;
+            cout << "[The Enemy Cyborg takes 4 damage. They are poisoned for " << enemy.poisoned << " more turn(s).]" << endl;
         }
         if ((player.Covered == 0) && (player.CoverT > 0)) {
             player.CoverT -= 1;
@@ -632,17 +706,17 @@ int main() {
             enemy.ActiveCover = 0;
         }
 
-        handleMove(move, player, enemy);
         enemy.do_ai_stuff(player, enemy, move);
+        handleMove(move, player, enemy);
 
         if (enemy.hp <= 0 && player.hp > 0) {
-            exit = win(player, enemy);
+            exit = win(player, enemy, score);
         }
         else if (player.hp <= 0 && enemy.hp > 0) {
-            exit = lose(player, enemy);
+            exit = lose(player, enemy, score);
         }
         else if (player.hp == 0 && enemy.hp == 0) {
-            exit = lose(player, enemy);
+            exit = lose(player, enemy, score);
         }
     }
 
