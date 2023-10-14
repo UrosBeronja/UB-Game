@@ -167,16 +167,17 @@ public:
          Covered(Covered), CoverT(CoverT), ActiveCover(ActiveCover), isAI(isAI) {
     }
 
-    int do_ai_stuff(Character& player, Character& enemy, int move) {
+    int AI_Cal(Character& player, Character& enemy, int move, int turn) {
         int AIMove;
         int minus = 0;
         int no[8]{};
         int j = 0;
         bool e=1;
         bool r = 1;
-       
-        for (int i = 0; i < 8; i++) {
-            no[i] = 10;
+        if (turn == 1) {
+            for (int i = 0; i < 8; i++) {
+                no[i] = 10;
+            }
         }
         GameState current_state = get_current_state(player, enemy);
         float epsilon = 0.2; // Set your exploration rate (epsilon) as needed
@@ -241,11 +242,6 @@ GameState get_current_state(Character player, Character enemy) {
 GameState execute_action(int action, int move, Character& player, Character& enemy) {
     GameState next_state = get_current_state(player, enemy);
     GameState Error;
-
-    if (player.isAI) {
-        // AI's action based on Q-learning logic
-        action = enemy.do_ai_stuff(enemy, player, move);
-    }
 
     int reward = handleAIMove(action, player, enemy, move);
     if (reward == 100) {
@@ -494,7 +490,7 @@ void handleMove(int move, Character& char1, Character& char2) {
     }
 }
 
-bool win(Character& player, Character& enemy, int score) {
+bool win(Character& player, Character& enemy, int score, int turn) {
     string response;
     while (true) {
         cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
@@ -512,6 +508,7 @@ bool win(Character& player, Character& enemy, int score) {
                 << "You have defeated the enemy, but the Cyborgs have adapted, a new, better Cyborg takes his place he next noon, ready to fight." << endl
                 << "Your Current Score is: "<< score << endl
                 << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
+            turn = 1;
             return true;
         }
         else if (response == "no") {
@@ -527,7 +524,7 @@ bool win(Character& player, Character& enemy, int score) {
     }
 }
 
-bool lose(Character& player, Character& enemy, int score) {
+bool lose(Character& player, Character& enemy, int score, int turn) {
     string response;
     while (true) {
         cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
@@ -545,6 +542,7 @@ bool lose(Character& player, Character& enemy, int score) {
                 << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
             reset_player(player);
             reset_player(enemy);
+            turn = 1;
             return true;
         }
         else if (response == "no") {
@@ -600,6 +598,7 @@ int main() {
     Character player(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, false);
     Character enemy(100, 6, false, false, 4, 3, 1, 0, 1, 3, false, true);
     int move;
+    int turn = 1;
     bool exit=false;
     string response1;
     int score = 0;
@@ -653,7 +652,6 @@ int main() {
         cout << "----------------------------------------------------------------------------------------------------------------------------------" << endl
             << "The First Cyborg Approaches, challenging you to a duel at the peak of day." << endl
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl;
-
         exit = true;
     }
     else if (response1 == "no") {
@@ -662,10 +660,18 @@ int main() {
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
         exit= false;
     }
+    else if (response1 == "robot") {
+        player.isAI = 1;
+        cout << endl << "----------------------------------------------------------------------------------------------------------------------------------" << endl
+            << "Welcome to the Frontier, B.U.55 Unit." << endl
+            << "----------------------------------------------------------------------------------------------------------------------------------" << endl << endl;
+
+        exit = true;
+    }
 
     while (exit) {
 
-        cout
+        cout<<"Turn: " << turn
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl
             << "Your Stats:" << endl
             << "Player HP: " << player.hp << endl
@@ -691,7 +697,7 @@ int main() {
             << "(8) Take Cover! (" << player.Covered << " Cover left)           [Shield yourself behind cover, take half damage for 3 turns, but you cant use the Saber.]" << endl
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl
             ;
-        int move = getValidMove();
+
         if (player.poisoned != 0) {
             player.hp -= 4;
             player.poisoned -= 1;
@@ -715,17 +721,25 @@ int main() {
             enemy.ActiveCover = 0;
         }
 
-        enemy.do_ai_stuff(player, enemy, move);
-        handleMove(move, player, enemy);
+        if (player.isAI == 1) {
+            cin >> move;
+            move = player.AI_Cal(enemy, player, move, turn);
+        }
+        else {
+            move = getValidMove();
+            handleMove(move ,player, enemy);
+        }
+
+        enemy.AI_Cal(player, enemy, move, turn);
 
         if (enemy.hp <= 0 && player.hp > 0) {
-            exit = win(player, enemy, score);
+            exit = win(player, enemy, score, turn);
         }
         else if (player.hp <= 0 && enemy.hp > 0) {
-            exit = lose(player, enemy, score);
+            exit = lose(player, enemy, score, turn);
         }
         else if (player.hp == 0 && enemy.hp == 0) {
-            exit = lose(player, enemy, score);
+            exit = lose(player, enemy, score, turn);
         }
     }
 
