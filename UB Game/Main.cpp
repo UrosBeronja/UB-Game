@@ -288,7 +288,6 @@ float calculate_reward(GameState state, int minus) {
 
 int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
     bool sh = 0;
-    bool cv = 0;
     int reward = chara1.hp;
     int hp = chara2.hp;
 
@@ -296,8 +295,6 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
 
         if (enMove == SHIELD) {
             sh = 1;
-        }if (enMove == COVER) {
-            cv = 1;
         }
 
         ////AI MOVES
@@ -307,8 +304,8 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
                 return 100;
             }
             cout << "[The Cyborg sliced you with its sword. It deals you " << 1 * (chara2.attackDmg * (sh ? 0 : 1) *
-                (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)) << " damage.]" << endl;
-            chara1.hp -= 1 * chara2.attackDmg * (sh ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1);
+                (chara1.ActiveCover ? 0.5 : 1) * (chara1.shielded ? 0 : 1)) << " damage.]" << endl;
+            chara1.hp -= 1 * chara2.attackDmg * (sh ? 0 : 1) * (chara1.shielded ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1);
             chara2.attackDmg = 4;
             chara2.shielded = false;
         }
@@ -321,11 +318,11 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
 
             cout << "[The Cyborg Fans their Gun!]" << endl;
             while (i > 0) {
-                chara1.hp -= 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) *(cv ? 0.5 : 1);
+                chara1.hp -= 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) * (chara1.shielded ? 0 : 1);
                 chara2.shots -= 1;
                 i--;
-                cout << "[A Shot hits you for " << 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1)
-                    << " damage!]" << endl;
+                cout << "[A Shot hits you for " << 1.5 * chara2.attackDmg * (sh ? 0 : 1) *(chara1.ActiveCover ? 0.5 : 1)
+                    * (chara1.shielded ? 0 : 1) << " damage!]" << endl;
             }
             chara2.attackDmg = 4;
             chara2.shielded = false;
@@ -336,8 +333,8 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
                 return 100;
             }
             cout << "[The Cyborg shoots you with its Revolver! It deals you " << 1.5 * chara2.attackDmg * (sh ? 0 : 1)
-                * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1) << " damage.]" << endl;
-            chara1.hp -= 1.5 * chara2.attackDmg * (chara1.shielded ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1) * (cv ? 0.5 : 1);
+                * (chara1.ActiveCover ? 0.5 : 1) * (chara1.shielded ? 0 : 1) << " damage.]" << endl;
+            chara1.hp -= 1.5 * chara2.attackDmg *(sh ? 0 : 1) *(chara1.shielded ? 0 : 1) * (chara1.ActiveCover ? 0.5 : 1);
             chara2.shots -= 1;
             chara2.attackDmg = 4;
             chara2.shielded = false;
@@ -358,6 +355,7 @@ int handleAIMove(int move, Character& chara1, Character& chara2, int enMove) {
             }
             cout << "[The Cyborg Heal its wounds! It heals " << 2 * chara2.attackDmg << " wounds.]" << endl;
             chara2.hp += 2 * chara2.attackDmg;
+            chara2.healing--;
             if (chara2.hp > 100) {
                 reward = reward + 100 - chara2.hp;
                 chara2.hp = 100;
@@ -687,7 +685,7 @@ int main() {
 
     while (exit) {
 
-        cout<<"Turn: " << turn
+        cout << "Turn: " << turn << endl
             << "----------------------------------------------------------------------------------------------------------------------------------" << endl
             << "Your Stats:" << endl
             << "Player HP: " << player.hp << endl
@@ -739,14 +737,16 @@ int main() {
 
         if (player.isAI == 1) {
             move = getValidMove();
-            move = player.AI_Cal(enemy, player, move, turn);
+            move = enemy.AI_Cal(player, enemy, move, turn);
+            player.AI_Cal(enemy, player, move, turn);
         }
         else {
             move = getValidMove();
+            enemy.AI_Cal(player, enemy, move, turn);
             handleMove(move ,player, enemy);
         }
 
-        enemy.AI_Cal(player, enemy, move, turn);
+        
 
         if (enemy.hp <= 0 && player.hp > 0) {
             exit = win(player, enemy, score, turn);
